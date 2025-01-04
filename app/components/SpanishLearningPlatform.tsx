@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
-import { 
+import MultipleChoiceQuiz from '../../src/components/MultipleChoiceQuiz';
+import {
   Trophy, Star, Zap, Calendar, Book, Users, CheckCircle, XCircle,
   Brain, Volume2, ChevronLeft, ChevronRight, Sparkles, Flag
 } from 'lucide-react';
@@ -49,6 +50,7 @@ export default function SpanishLearningPlatform() {
   const [quizOptions, setQuizOptions] = useState([]);
   const [isCorrect, setIsCorrect] = useState(null);
   const [practiceMode, setPracticeMode] = useState('flashcards');
+  const [selectedPracticeMode, setSelectedPracticeMode] = useState(null);
   
   const [userStats, setUserStats] = useState({
     streak: 7,
@@ -82,6 +84,71 @@ export default function SpanishLearningPlatform() {
       dailyGoal: Math.min(100, prev.dailyGoal + (correct ? 5 : 1))
     }));
     setTimeout(handleNextCard, 1000);
+  };
+
+  const renderPractice = () => {
+    if (selectedPracticeMode === 'multiple-choice') {
+      return (
+        <MultipleChoiceQuiz 
+          cards={flashcardsDB} 
+          onComplete={(results) => {
+            setSelectedPracticeMode(null);
+            setUserStats(prev => ({
+              ...prev,
+              xp: prev.xp + (results.score * 10) + Math.floor(results.timeSpent / 60) * 5,
+              totalCardsLearned: prev.totalCardsLearned + results.correctAnswers.length,
+              dailyGoal: Math.min(100, prev.dailyGoal + (results.score * 5))
+            }));
+            if (results.score === results.totalQuestions) {
+              setAchievements(prev => 
+                prev.map(achievement => 
+                  achievement.name === 'Quiz Champion' 
+                    ? { ...achievement, achieved: true }
+                    : achievement
+                )
+              );
+            }
+          }} 
+        />
+      );
+    }
+    return (
+      <Card>
+        <CardHeader>
+          <h2 className="text-xl font-bold">Practice Modes</h2>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-4">
+          <Button 
+            className="h-24 flex flex-col items-center justify-center space-y-2"
+            onClick={() => setSelectedPracticeMode('multiple-choice')}
+          >
+            <Brain className="w-6 h-6" />
+            <span>Multiple Choice</span>
+          </Button>
+          <Button 
+            className="h-24 flex flex-col items-center justify-center space-y-2"
+            disabled
+          >
+            <Volume2 className="w-6 h-6" />
+            <span>Listen & Speak</span>
+          </Button>
+          <Button 
+            className="h-24 flex flex-col items-center justify-center space-y-2"
+            disabled
+          >
+            <Users className="w-6 h-6" />
+            <span>Match Pairs</span>
+          </Button>
+          <Button 
+            className="h-24 flex flex-col items-center justify-center space-y-2"
+            disabled
+          >
+            <Zap className="w-6 h-6" />
+            <span>Time Challenge</span>
+          </Button>
+        </CardContent>
+      </Card>
+    );
   };
 
   const renderDashboard = () => (
@@ -332,3 +399,5 @@ export default function SpanishLearningPlatform() {
     </div>
   );
 }
+
+

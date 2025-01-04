@@ -1,6 +1,13 @@
 // app/page.tsx
-import SpanishLearningPlatform from './components/SpanishLearningPlatform'; // Ensure this is the correct path
+'use client';
+
+import SpanishLearningPlatform from './components/SpanishLearningPlatform'; // Correct path to SpanishLearningPlatform
+import { UserProvider } from '../src/contexts/UserContext'; // Corrected path to UserContext
 
 export default function Home() {
-  return <SpanishLearningPlatform />;
+  return (
+    <UserProvider>
+      <SpanishLearningPlatform />
+    </UserProvider>
+  );
 }
