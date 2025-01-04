@@ -15,6 +15,7 @@ import {
   Timer,
   Heart
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Types for our component props and quiz state
 interface FlashCard {
@@ -69,7 +70,6 @@ const MultipleChoiceQuiz: React.FC<QuizProps> = ({ cards, onComplete }) => {
   // Generate quiz options with improved distribution
   const generateOptions = (correctAnswer: string): string[] => {
     const options = [correctAnswer];
-    // Filter cards by same category for more relevant options
     const sameCategory = cards.filter(
       card => card.english !== correctAnswer && 
       card.category === cards[currentQuestion].category
@@ -79,12 +79,10 @@ const MultipleChoiceQuiz: React.FC<QuizProps> = ({ cards, onComplete }) => {
       card.category !== cards[currentQuestion].category
     );
     
-    // Try to get at least one option from same category
     if (sameCategory.length > 0) {
       options.push(sameCategory[Math.floor(Math.random() * sameCategory.length)].english);
     }
     
-    // Fill remaining options
     while (options.length < 4 && (sameCategory.length > 0 || otherCards.length > 0)) {
       const pool = options.length < 3 ? [...sameCategory, ...otherCards] : otherCards;
       const randomIndex = Math.floor(Math.random() * pool.length);
@@ -101,7 +99,6 @@ const MultipleChoiceQuiz: React.FC<QuizProps> = ({ cards, onComplete }) => {
     return generateOptions(cards[currentQuestion].english);
   }, [currentQuestion, cards]);
 
-  // Handle text-to-speech
   const speakText = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'es-ES';
@@ -124,7 +121,6 @@ const MultipleChoiceQuiz: React.FC<QuizProps> = ({ cards, onComplete }) => {
       setIncorrectAnswers([...incorrectAnswers, cards[currentQuestion].id]);
     }
 
-    // Check if quiz should end
     const isLastQuestion = currentQuestion + 1 === totalQuestions;
     const isOutOfLives = lives - 1 === 0;
 
@@ -176,105 +172,115 @@ const MultipleChoiceQuiz: React.FC<QuizProps> = ({ cards, onComplete }) => {
         <Progress value={progress} className="h-2" />
       </CardHeader>
 
-      <CardContent className="space-y-6">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center items-center space-x-2">
-            <h3 className="text-2xl font-bold">{cards[currentQuestion].spanish}</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => speakText(cards[currentQuestion].spanish)}
-            >
-              <Volume2 className="w-4 h-4" />
-            </Button>
-          </div>
-          <p className="text-gray-600 italic">{cards[currentQuestion].pronunciation}</p>
-          {streak > 2 && (
-            <Badge variant="secondary" className="animate-pulse">
-              Streak Bonus {getStreakBonus()}
-            </Badge>
-          )}
-        </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentQuestion}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.2 }}
+        >
+          <CardContent className="space-y-6">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center items-center space-x-2">
+                <h3 className="text-2xl font-bold">{cards[currentQuestion].spanish}</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => speakText(cards[currentQuestion].spanish)}
+                >
+                  <Volume2 className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-gray-600 italic">{cards[currentQuestion].pronunciation}</p>
+              {streak > 2 && (
+                <Badge variant="secondary" className="animate-pulse">
+                  Streak Bonus {getStreakBonus()}
+                </Badge>
+              )}
+            </div>
 
-        <div className="grid grid-cols-1 gap-3">
-          {currentOptions.map((option, index) => (
-            <Button
-              key={index}
-              variant={showFeedback ? 'outline' : 'default'}
-              className={`h-14 text-lg ${
-                showFeedback
-                  ? option === cards[currentQuestion].english
-                    ? 'border-green-500 text-green-700 bg-green-50'
-                    : selectedAnswer === option
-                    ? 'border-red-500 text-red-700 bg-red-50'
-                    : ''
-                  : 'hover:translate-y-[-2px] transition-transform'
-              }`}
-              onClick={() => !showFeedback && handleAnswer(option)}
-              disabled={showFeedback}
-            >
-              {option}
-              {showFeedback && option === cards[currentQuestion].english && (
-                <CheckCircle className="w-5 h-5 ml-2 text-green-500" />
-              )}
-              {showFeedback && selectedAnswer === option && !isCorrect && (
-                <XCircle className="w-5 h-5 ml-2 text-red-500" />
-              )}
-            </Button>
-          ))}
-        </div>
+            <div className="grid grid-cols-1 gap-3">
+              {currentOptions.map((option, index) => (
+                <Button
+                  key={index}
+                  variant={showFeedback ? 'outline' : 'default'}
+                  className={`h-14 text-lg ${
+                    showFeedback
+                      ? option === cards[currentQuestion].english
+                        ? 'border-green-500 text-green-700 bg-green-50'
+                        : selectedAnswer === option
+                        ? 'border-red-500 text-red-700 bg-red-50'
+                        : ''
+                      : 'hover:translate-y-[-2px] transition-transform'
+                  }`}
+                  onClick={() => !showFeedback && handleAnswer(option)}
+                  disabled={showFeedback}
+                >
+                  {option}
+                  {showFeedback && option === cards[currentQuestion].english && (
+                    <CheckCircle className="w-5 h-5 ml-2 text-green-500" />
+                  )}
+                  {showFeedback && selectedAnswer === option && !isCorrect && (
+                    <XCircle className="w-5 h-5 ml-2 text-red-500" />
+                  )}
+                </Button>
+              ))}
+            </div>
 
-        {showFeedback && (
-          <Alert className={isCorrect ? 'bg-green-50' : 'bg-red-50'}>
-            <AlertTitle className="flex items-center">
-              {isCorrect ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-                  <span className="text-green-700">¡Correcto! Well done!</span>
-                </>
-              ) : (
-                <>
-                  <XCircle className="w-4 h-4 mr-2 text-red-500" />
-                  <span className="text-red-700">
-                    Not quite! The correct answer is: {cards[currentQuestion].english}
-                  </span>
-                </>
-              )}
-            </AlertTitle>
-            <AlertDescription>
-              {cards[currentQuestion].examples[0]?.spanish && (
-                <div className="mt-2 text-sm">
-                  <p className="font-medium">Example:</p>
-                  <p>{cards[currentQuestion].examples[0].spanish}</p>
-                  <p className="text-gray-600">{cards[currentQuestion].examples[0].english}</p>
-                </div>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-      </CardContent>
+            {showFeedback && (
+              <Alert className={isCorrect ? 'bg-green-50' : 'bg-red-50'}>
+                <AlertTitle className="flex items-center">
+                  {isCorrect ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                      <span className="text-green-700">¡Correcto! Well done!</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-4 h-4 mr-2 text-red-500" />
+                      <span className="text-red-700">
+                        Not quite! The correct answer is: {cards[currentQuestion].english}
+                      </span>
+                    </>
+                  )}
+                </AlertTitle>
+                <AlertDescription>
+                  {cards[currentQuestion].examples[0]?.spanish && (
+                    <div className="mt-2 text-sm">
+                      <p className="font-medium">Example:</p>
+                      <p>{cards[currentQuestion].examples[0].spanish}</p>
+                      <p className="text-gray-600">{cards[currentQuestion].examples[0].english}</p>
+                    </div>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </motion.div>
+      </AnimatePresence>
 
       <CardFooter className="flex justify-between items-center">
         <div className="text-sm space-x-4">
-          <span className="text-gray-600">
-            Score: {score}/{currentQuestion + 1}
-          </span>
-          <span className="text-gray-600">
-            Streak: {streak} {streak >= 3 && '🔥'}
-          </span>
+          <motion.p 
+            className="text-sm text-gray-500"
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            transition={{ delay: 0.5 }}
+          >
+            Current Score: {score}
+          </motion.p>
+          {lives === 0 && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.5 }}
+            >
+              <Trophy className="w-4 h-4 text-yellow-500 mr-2" />
+              Quiz Over
+            </motion.div>
+          )}
         </div>
-        {currentQuestion + 1 === totalQuestions && !showFeedback && (
-          <Button onClick={() => onComplete({
-            score,
-            totalQuestions,
-            timeSpent,
-            correctAnswers,
-            incorrectAnswers
-          })}>
-            Finish Quiz
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-        )}
       </CardFooter>
     </Card>
   );

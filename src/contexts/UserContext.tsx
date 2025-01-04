@@ -1,7 +1,6 @@
-// src/contexts/UserContext.tsx
 'use client';  // Add this directive to make this a client component
 
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useState } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface UserStats {
@@ -30,6 +29,8 @@ interface UserContextType {
   achievements: Achievement[];
   unlockAchievement: (id: number) => void;
   checkDailyStreak: () => void;
+  showAchievement: Achievement | null;
+  setShowAchievement: React.Dispatch<React.SetStateAction<Achievement | null>>;
 }
 
 const defaultStats: UserStats = {
@@ -58,6 +59,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [stats, setStats] = useLocalStorage<UserStats>('userStats', defaultStats);
   const [achievements, setAchievements] = useLocalStorage<Achievement[]>('achievements', defaultAchievements);
+  const [showAchievement, setShowAchievement] = useState<Achievement | null>(null);
 
   const updateStats = (updates: Partial<UserStats>) => {
     setStats(current => {
@@ -81,6 +83,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
           : achievement
       )
     );
+    
+    // Set the achievement to show
+    const unlockedAchievement = achievements.find(a => a.id === id);
+    if (unlockedAchievement) {
+      setShowAchievement(unlockedAchievement);
+
+      // Hide achievement after 3 seconds
+      setTimeout(() => setShowAchievement(null), 3000);
+    }
   };
 
   const checkDailyStreak = () => {
@@ -120,7 +131,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       updateStats,
       achievements,
       unlockAchievement,
-      checkDailyStreak
+      checkDailyStreak,
+      showAchievement,
+      setShowAchievement
     }}>
       {children}
     </UserContext.Provider>

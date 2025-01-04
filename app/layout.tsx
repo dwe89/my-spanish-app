@@ -1,11 +1,8 @@
-// app/layout.tsx
-import '../styles/globals.css'; // Ensure global styles are applied
-import { UserProvider } from '../src/contexts/UserContext'; // Corrected import path for UserProvider
+'use client'; // Client component directive
 
-export const metadata = {
-  title: 'Next.js App',
-  description: 'This is a Next.js app',
-};
+import '../styles/globals.css'; // Ensure global styles are applied
+import { UserProvider, useUser } from '../src/contexts/UserContext'; // Import useUser hook and UserProvider
+import { AchievementPopup } from '../src/components/AchievementPopup'; // Import AchievementPopup
 
 export default function RootLayout({
   children,
@@ -17,14 +14,31 @@ export default function RootLayout({
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{metadata.title}</title>
-        <meta name="description" content={metadata.description} />
+        <title>Next.js App</title>
+        <meta name="description" content="This is a Next.js app" />
       </head>
       <body>
-        <UserProvider> {/* Wrap the children with UserProvider */}
-          {children}
+        {/* Make sure UserProvider is wrapping the children */}
+        <UserProvider>
+          <MainContent>{children}</MainContent>
         </UserProvider>
       </body>
     </html>
+  );
+}
+
+function MainContent({ children }: { children: React.ReactNode }) {
+  const { showAchievement, setShowAchievement } = useUser();  // Access the showAchievement state from context
+
+  return (
+    <>
+      {showAchievement && (
+        <AchievementPopup 
+          achievement={showAchievement} 
+          onClose={() => setShowAchievement(null)}
+        />
+      )}
+      {children}
+    </>
   );
 }
